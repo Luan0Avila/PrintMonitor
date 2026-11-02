@@ -107,3 +107,150 @@ def test_get_http_error(mock_get, status_code, settings):
         client._get("version")
 
     assert str(status_code) in str(error.value)
+
+def test_get_printer_status(settings):
+    settings.OCTOPRINT_URL = "http://localhost:5000"
+    settings.OCTOPRINT_API_KEY = "test-api-key"
+    settings.OCTOPRINT_TIMEOUT = 5
+
+    client = OctoPrintClient()
+
+    expected = {"state": {"text": "Operational"}}
+    client._get = Mock(return_value=expected)
+
+    result = client.get_printer_status()
+
+    assert result == expected
+    client._get.assert_called_once_with("printer")
+
+
+def test_get_current_job(settings):
+    settings.OCTOPRINT_URL = "http://localhost:5000"
+    settings.OCTOPRINT_API_KEY = "test-api-key"
+    settings.OCTOPRINT_TIMEOUT = 5
+
+    client = OctoPrintClient()
+
+    expected = {"state": "Operational", "progress": {}}
+    client._get = Mock(return_value=expected)
+
+    result = client.get_current_job()
+
+    assert result == expected
+    client._get.assert_called_once_with("job")
+
+
+def test_get_temperature(settings):
+    settings.OCTOPRINT_URL = "http://localhost:5000"
+    settings.OCTOPRINT_API_KEY = "test-api-key"
+    settings.OCTOPRINT_TIMEOUT = 5
+
+    client = OctoPrintClient()
+
+    expected = {
+        "tool0": {"actual": 24.0, "target": 0.0},
+        "bed": {"actual": 25.0, "target": 0.0},
+    }
+
+    client.get_printer_status = Mock(
+        return_value={"temperature": expected}
+    )
+
+    result = client.get_temperature()
+
+    assert result == expected
+    client.get_printer_status.assert_called_once()
+
+
+def test_get_connection(settings):
+    settings.OCTOPRINT_URL = "http://localhost:5000"
+    settings.OCTOPRINT_API_KEY = "test-api-key"
+    settings.OCTOPRINT_TIMEOUT = 5
+
+    client = OctoPrintClient()
+
+    expected = {
+        "current": {
+            "state": "Operational",
+            "port": "/dev/ttyUSB0",
+        }
+    }
+
+    client._get = Mock(return_value=expected)
+
+    result = client.get_connection()
+
+    assert result == expected
+    client._get.assert_called_once_with("connection")
+
+
+def test_get_dashboard_data_operational(settings):
+    settings.OCTOPRINT_URL = "http://localhost:5000"
+    settings.OCTOPRINT_API_KEY = "test-api-key"
+    settings.OCTOPRINT_TIMEOUT = 5
+
+    client = OctoPrintClient()
+
+    client.get_connection = Mock(return_value={
+        "current": {
+            "state": "Operational",
+            "port": "/dev/ttyUSB0",
+            "baudrate": 115200,
+        }
+    })
+
+    client.get_printer_status = Mock(return_value={
+        "state": {
+            "text": "Operational",
+            "flags": {"operational": True},
+        },
+        "temperature": {
+            "tool0": {"actual": 24.0, "target": 0.0},
+            "bed": {"actual": 25.0, "target": 0.0},
+        },
+    })
+
+    client.get_current_job = Mock(return_value={
+        "state": "Operational",
+        "progress": {},
+    })
+
+    result = client.get_dashboard_data()
+
+    assert result["server"]["online"] is True
+    assert result["connection"]["connected"] is True
+    assert result["printer"]["state"] == "Operational"
+    assert "tool0" in result["temperature"]
+    assert result["job"]["state"] == "Operational"
+
+    client.get_printer_status.assert_called_once()
+    client.get_current_job.assert_called_once()
+
+def test_get_dashboard_data_disconnected(settings):
+    settings.OCTOPRINT_URL = "http://localhost:5000"
+    settings.OCTOPRINT_API_KEY = "test-api-key"
+    settings.OCTOPRINT_TIMEOUT = 5
+
+    client = OctoPrintClient()
+
+    client.get_connection = Mock(return_value={
+        "current": {
+            "state": "Closed",
+            "port": "/dev/ttyUSB0",
+            "baudrate": 115200,
+        }
+    })
+
+    client.get_printer_status = Mock()
+    client.get_current_job = Mock()
+
+    result = client.get_dashboard_data()
+
+    assert result["server"]["online"] is True
+    assert result["connection"]["connected"] is False
+    assert result["printer"]["state"] == "Disconnected"
+    assert result["temperature"] == {}
+    assert result["job"] is None
+
+    client.get_printer_status.assert_not_called()
+    client.get_current_job.assert_not_called()
