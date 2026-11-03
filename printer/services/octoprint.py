@@ -7,7 +7,6 @@ class OctoPrintError(Exception):
 
 
 class OctoPrintClient:
-
     def __init__(self):
         self.base_url = settings.OCTOPRINT_URL
         self.api_key = settings.OCTOPRINT_API_KEY
@@ -18,24 +17,16 @@ class OctoPrintClient:
         url = f"{self.base_url}/api/{endpoint}"
 
         try:
-            response = requests.get(
-                url,
-                headers=self.headers,
-                timeout=self.timeout
-            )
+            response = requests.get(url, headers=self.headers, timeout=self.timeout)
 
             response.raise_for_status()
             return response.json()
 
         except requests.Timeout as error:
-            raise OctoPrintError(
-                "Tempo limite de conexão com o OctoPrint."
-            ) from error
+            raise OctoPrintError("Tempo limite de conexão com o OctoPrint.") from error
 
         except requests.ConnectionError as error:
-            raise OctoPrintError(
-                "Não foi possível conectar ao OctoPrint."
-            ) from error
+            raise OctoPrintError("Não foi possível conectar ao OctoPrint.") from error
 
         except requests.HTTPError as error:
             status_code = error.response.status_code
@@ -44,9 +35,7 @@ class OctoPrintClient:
             ) from error
 
         except requests.RequestException as error:
-            raise OctoPrintError(
-                f"Erro na requisição: {error}"
-            ) from error
+            raise OctoPrintError(f"Erro na requisição: {error}") from error
 
     def get_printer_status(self):
         return self._get("printer")
@@ -57,7 +46,7 @@ class OctoPrintClient:
     def get_temperature(self):
         printer_data = self.get_printer_status()
         return printer_data.get("temperature", {})
-    
+
     def get_connection(self):
         return self._get("connection")
 

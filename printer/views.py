@@ -1,11 +1,11 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from printer.services.octoprint import OctoPrintClient, OctoPrintError
 
-class PrinterStatusView(APIView):
 
+class PrinterStatusView(APIView):
     def get(self, request):
         client = OctoPrintClient()
 
@@ -19,5 +19,5 @@ class PrinterStatusView(APIView):
                     "server": {"online": False},
                     "error": str(error),
                 },
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )

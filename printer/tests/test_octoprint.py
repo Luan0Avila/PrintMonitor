@@ -1,7 +1,7 @@
-import requests
-import pytest
-
 from unittest.mock import Mock, patch
+
+import pytest
+import requests
 
 from printer.services.octoprint import (
     OctoPrintClient,
@@ -21,9 +21,8 @@ def test_client_initialization(settings):
     assert client.base_url == "http://localhost:5000"
     assert client.api_key == "test-api-key"
     assert client.timeout == 10
-    assert client.headers == {
-        "X-Api-Key": "test-api-key"
-    }
+    assert client.headers == {"X-Api-Key": "test-api-key"}
+
 
 @patch("printer.services.octoprint.requests.get")
 def test_get_success(mock_get, settings):
@@ -53,6 +52,7 @@ def test_get_success(mock_get, settings):
         timeout=5,
     )
 
+
 @patch("printer.services.octoprint.requests.get")
 def test_get_timeout(mock_get, settings):
     settings.OCTOPRINT_URL = "http://localhost:5000"
@@ -68,6 +68,7 @@ def test_get_timeout(mock_get, settings):
 
     assert "Tempo limite" in str(error.value)
 
+
 @patch("printer.services.octoprint.requests.get")
 def test_get_connection_error(mock_get, settings):
     settings.OCTOPRINT_URL = "http://localhost:5000"
@@ -82,6 +83,7 @@ def test_get_connection_error(mock_get, settings):
         client._get("version")
 
     assert "Não foi possível conectar" in str(error.value)
+
 
 @pytest.mark.parametrize(
     "status_code",
@@ -107,6 +109,7 @@ def test_get_http_error(mock_get, status_code, settings):
         client._get("version")
 
     assert str(status_code) in str(error.value)
+
 
 def test_get_printer_status(settings):
     settings.OCTOPRINT_URL = "http://localhost:5000"
@@ -152,9 +155,7 @@ def test_get_temperature(settings):
         "bed": {"actual": 25.0, "target": 0.0},
     }
 
-    client.get_printer_status = Mock(
-        return_value={"temperature": expected}
-    )
+    client.get_printer_status = Mock(return_value={"temperature": expected})
 
     result = client.get_temperature()
 
@@ -191,29 +192,35 @@ def test_get_dashboard_data_operational(settings):
 
     client = OctoPrintClient()
 
-    client.get_connection = Mock(return_value={
-        "current": {
-            "state": "Operational",
-            "port": "/dev/ttyUSB0",
-            "baudrate": 115200,
+    client.get_connection = Mock(
+        return_value={
+            "current": {
+                "state": "Operational",
+                "port": "/dev/ttyUSB0",
+                "baudrate": 115200,
+            }
         }
-    })
+    )
 
-    client.get_printer_status = Mock(return_value={
-        "state": {
-            "text": "Operational",
-            "flags": {"operational": True},
-        },
-        "temperature": {
-            "tool0": {"actual": 24.0, "target": 0.0},
-            "bed": {"actual": 25.0, "target": 0.0},
-        },
-    })
+    client.get_printer_status = Mock(
+        return_value={
+            "state": {
+                "text": "Operational",
+                "flags": {"operational": True},
+            },
+            "temperature": {
+                "tool0": {"actual": 24.0, "target": 0.0},
+                "bed": {"actual": 25.0, "target": 0.0},
+            },
+        }
+    )
 
-    client.get_current_job = Mock(return_value={
-        "state": "Operational",
-        "progress": {},
-    })
+    client.get_current_job = Mock(
+        return_value={
+            "state": "Operational",
+            "progress": {},
+        }
+    )
 
     result = client.get_dashboard_data()
 
@@ -226,6 +233,7 @@ def test_get_dashboard_data_operational(settings):
     client.get_printer_status.assert_called_once()
     client.get_current_job.assert_called_once()
 
+
 def test_get_dashboard_data_disconnected(settings):
     settings.OCTOPRINT_URL = "http://localhost:5000"
     settings.OCTOPRINT_API_KEY = "test-api-key"
@@ -233,13 +241,15 @@ def test_get_dashboard_data_disconnected(settings):
 
     client = OctoPrintClient()
 
-    client.get_connection = Mock(return_value={
-        "current": {
-            "state": "Closed",
-            "port": "/dev/ttyUSB0",
-            "baudrate": 115200,
+    client.get_connection = Mock(
+        return_value={
+            "current": {
+                "state": "Closed",
+                "port": "/dev/ttyUSB0",
+                "baudrate": 115200,
+            }
         }
-    })
+    )
 
     client.get_printer_status = Mock()
     client.get_current_job = Mock()
@@ -255,15 +265,14 @@ def test_get_dashboard_data_disconnected(settings):
     client.get_printer_status.assert_not_called()
     client.get_current_job.assert_not_called()
 
+
 @patch("printer.services.octoprint.requests.get")
 def test_get_request_exception(mock_get, settings):
     settings.OCTOPRINT_URL = "http://localhost:5000"
     settings.OCTOPRINT_API_KEY = "test-api-key"
     settings.OCTOPRINT_TIMEOUT = 5
 
-    mock_get.side_effect = requests.RequestException(
-        "Erro inesperado na requisição"
-    )
+    mock_get.side_effect = requests.RequestException("Erro inesperado na requisição")
 
     client = OctoPrintClient()
 

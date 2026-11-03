@@ -1,7 +1,6 @@
+from unittest.mock import patch
+
 import pytest
-
-from unittest.mock import Mock, patch
-
 from rest_framework.test import APIClient
 
 from printer.services.octoprint import OctoPrintError
@@ -59,6 +58,21 @@ def test_printer_status_service_error(mock_client, api_client):
 
     assert response.status_code == 503
     assert response.json() == {
+        "server": {"online": False},
+        "error": "Não foi possível conectar ao OctoPrint.",
+    }
+
+
+def test_printer_status_service_unavailable(api_client):
+    with patch("printer.views.OctoPrintClient") as mock_client:
+        mock_client.return_value.get_dashboard_data.side_effect = OctoPrintError(
+            "Não foi possível conectar ao OctoPrint."
+        )
+
+        response = api_client.get("/api/printer/status/")
+
+    assert response.status_code == 503
+    assert response.data == {
         "server": {"online": False},
         "error": "Não foi possível conectar ao OctoPrint.",
     }
