@@ -281,3 +281,39 @@ def test_get_request_exception(mock_get, settings):
 
     assert "Erro na requisição" in str(error.value)
     assert "Erro inesperado na requisição" in str(error.value)
+
+def test_get_dashboard_data_printing(settings):
+    settings.OCTOPRINT_URL = "http://localhost:5000"
+    settings.OCTOPRINT_API_KEY = "test-api-key"
+    settings.OCTOPRINT_TIMEOUT = 5
+
+    client = OctoPrintClient()
+
+    client.get_connection = Mock(return_value={
+        "current": {
+            "state": "Printing",
+            "port": "/dev/ttyUSB0",
+            "baudrate": 115200,
+        }
+    })
+
+    client.get_printer_status = Mock(return_value={
+        "state": {
+            "text": "Printing",
+            "flags": {"printing": True},
+        },
+        "temperature": {},
+    })
+
+    client.get_current_job = Mock(return_value={
+        "state": "Printing",
+        "progress": {},
+    })
+
+    result = client.get_dashboard_data()
+
+    assert result["connection"]["connected"] is True
+    assert result["printer"]["state"] == "Printing"
+
+    client.get_printer_status.assert_called_once()
+    client.get_current_job.assert_called_once()

@@ -1,6 +1,9 @@
+import logging
+
 import requests
 from django.conf import settings
 
+logger = logging.getLogger(__name__)
 
 class OctoPrintError(Exception):
     """Erro na comunicação com a API do OctoPrint."""
@@ -17,25 +20,49 @@ class OctoPrintClient:
         url = f"{self.base_url}/api/{endpoint}"
 
         try:
+            logger.info("Consultando endpoint do OctoPrint: %s", endpoint)
+
             response = requests.get(url, headers=self.headers, timeout=self.timeout)
 
+            logger.info("Consulta ao endpoint %s realizada com sucesso.", endpoint)
             response.raise_for_status()
             return response.json()
 
         except requests.Timeout as error:
-            raise OctoPrintError("Tempo limite de conexão com o OctoPrint.") from error
+            logger.warning("Timeout ao consultar o OctoPrint.")
+            raise OctoPrintError(
+                "Tempo limite de conexão com o OctoPrint."
+            ) from error
 
         except requests.ConnectionError as error:
-            raise OctoPrintError("Não foi possível conectar ao OctoPrint.") from error
+            logger.error("Falha de conexão com o OctoPrint.")
+            raise OctoPrintError(
+                "Não foi possível conectar ao OctoPrint."
+            ) from error
 
         except requests.HTTPError as error:
             status_code = error.response.status_code
+
+            logger.error(
+                "Erro HTTP %s ao consultar o endpoint %s.",
+                status_code,
+                endpoint,
+            )
+
             raise OctoPrintError(
                 f"Erro HTTP ao consultar o OctoPrint: {status_code}."
             ) from error
 
         except requests.RequestException as error:
-            raise OctoPrintError(f"Erro na requisição: {error}") from error
+            logger.error(
+                "Erro inesperado na requisição ao endpoint %s: %s",
+                endpoint,
+                error,
+            )
+
+            raise OctoPrintError(
+                f"Erro na requisição: {error}"
+            ) from error
 
     def get_printer_status(self):
         return self._get("printer")
@@ -54,7 +81,21 @@ class OctoPrintClient:
         connection = self.get_connection()
         connection_state = connection.get("current", {})
 
-        connected = connection_state.get("state") == "Operational"
+        connected = connection_state.get("state") in {
+    "Operational",
+    "Printing",
+    "Paused",
+}
+        if connected:
+            logger.info(
+                "Impressora conectada. Estado: %s",
+                connection_state.get("state"),
+            )
+        else:
+            logger.warning(
+                "Impressora desconectada. Estado: %s",
+                connection_state.get("state"),
+            )
 
         connection_data = {
             "connected": connected,
