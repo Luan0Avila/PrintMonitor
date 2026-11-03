@@ -254,3 +254,21 @@ def test_get_dashboard_data_disconnected(settings):
 
     client.get_printer_status.assert_not_called()
     client.get_current_job.assert_not_called()
+
+@patch("printer.services.octoprint.requests.get")
+def test_get_request_exception(mock_get, settings):
+    settings.OCTOPRINT_URL = "http://localhost:5000"
+    settings.OCTOPRINT_API_KEY = "test-api-key"
+    settings.OCTOPRINT_TIMEOUT = 5
+
+    mock_get.side_effect = requests.RequestException(
+        "Erro inesperado na requisição"
+    )
+
+    client = OctoPrintClient()
+
+    with pytest.raises(OctoPrintError) as error:
+        client._get("version")
+
+    assert "Erro na requisição" in str(error.value)
+    assert "Erro inesperado na requisição" in str(error.value)
