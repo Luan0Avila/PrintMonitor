@@ -6,7 +6,27 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 class OctoPrintError(Exception):
-    """Erro na comunicação com a API do OctoPrint."""
+    """Erro base da integração com o OctoPrint."""
+
+
+class OctoPrintConnectionError(OctoPrintError):
+    """Falha de conexão com o servidor OctoPrint."""
+
+
+class OctoPrintTimeoutError(OctoPrintError):
+    """Tempo limite excedido na comunicação."""
+
+
+class OctoPrintAuthenticationError(OctoPrintError):
+    """Falha de autenticação na API."""
+
+
+class OctoPrintConflictError(OctoPrintError):
+    """Operação incompatível com o estado atual."""
+
+
+class OctoPrintResponseError(OctoPrintError):
+    """Erro ou resposta inválida da API."""
 
 
 class OctoPrintClient:
@@ -29,14 +49,19 @@ class OctoPrintClient:
             return response.json()
 
         except requests.Timeout as error:
-            logger.warning("Timeout ao consultar o OctoPrint.")
-            raise OctoPrintError(
+            logger.warning(
+                "Timeout ao consultar o endpoint %s.",
+                endpoint,
+            )
+            raise OctoPrintTimeoutError(
                 "Tempo limite de conexão com o OctoPrint."
             ) from error
 
         except requests.ConnectionError as error:
-            logger.error("Falha de conexão com o OctoPrint.")
-            raise OctoPrintError(
+            logger.error(
+                "Falha de conexão com o OctoPrint."
+            )
+            raise OctoPrintConnectionError(
                 "Não foi possível conectar ao OctoPrint."
             ) from error
 
@@ -44,26 +69,42 @@ class OctoPrintClient:
             status_code = error.response.status_code
 
             logger.error(
-                "Erro HTTP %s ao consultar o endpoint %s.",
+                "Erro HTTP %s ao consultar %s.",
                 status_code,
                 endpoint,
             )
 
-            raise OctoPrintError(
+            if status_code in (401, 403):
+                raise OctoPrintAuthenticationError(
+                    "Falha de autenticação na API do OctoPrint."
+                ) from error
+
+            if status_code == 409:
+                raise OctoPrintConflictError(
+                    "Operação incompatível com o estado atual do OctoPrint."
+                ) from error
+
+            raise OctoPrintResponseError(
                 f"Erro HTTP ao consultar o OctoPrint: {status_code}."
             ) from error
 
-        except requests.RequestException as error:
+        except requests.exceptions.JSONDecodeError as error:
             logger.error(
-                "Erro inesperado na requisição ao endpoint %s: %s",
+                "Resposta JSON inválida no endpoint %s.",
                 endpoint,
-                error,
             )
-
-            raise OctoPrintError(
-                f"Erro na requisição: {error}"
+            raise OctoPrintResponseError(
+                "O OctoPrint retornou uma resposta JSON inválida."
             ) from error
 
+        except requests.RequestException as error:
+            logger.exception(
+                "Erro inesperado na requisição ao endpoint %s.",
+                endpoint,
+            )
+            raise OctoPrintResponseError(
+                f"Erro na requisição: {error}"
+            ) from error
     def get_printer_status(self):
         return self._get("printer")
 

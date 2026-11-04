@@ -4,8 +4,13 @@ import pytest
 import requests
 
 from printer.services.octoprint import (
+    OctoPrintAuthenticationError,
     OctoPrintClient,
+    OctoPrintConflictError,
+    OctoPrintConnectionError,
     OctoPrintError,
+    OctoPrintResponseError,
+    OctoPrintTimeoutError,
 )
 
 
@@ -63,10 +68,8 @@ def test_get_timeout(mock_get, settings):
 
     client = OctoPrintClient()
 
-    with pytest.raises(OctoPrintError) as error:
+    with pytest.raises(OctoPrintTimeoutError):
         client._get("version")
-
-    assert "Tempo limite" in str(error.value)
 
 
 @patch("printer.services.octoprint.requests.get")
@@ -79,18 +82,25 @@ def test_get_connection_error(mock_get, settings):
 
     client = OctoPrintClient()
 
-    with pytest.raises(OctoPrintError) as error:
+    with pytest.raises(OctoPrintConnectionError):
         client._get("version")
-
-    assert "Não foi possível conectar" in str(error.value)
 
 
 @pytest.mark.parametrize(
-    "status_code",
-    [403, 409],
+    ("status_code", "expected_exception"),
+    [
+        (403, OctoPrintAuthenticationError),
+        (409, OctoPrintConflictError),
+        (500, OctoPrintResponseError),
+    ],
 )
 @patch("printer.services.octoprint.requests.get")
-def test_get_http_error(mock_get, status_code, settings):
+def test_get_http_error(
+    mock_get,
+    status_code,
+    expected_exception,
+    settings,
+):
     settings.OCTOPRINT_URL = "http://localhost:5000"
     settings.OCTOPRINT_API_KEY = "test-api-key"
     settings.OCTOPRINT_TIMEOUT = 5
@@ -105,10 +115,8 @@ def test_get_http_error(mock_get, status_code, settings):
 
     client = OctoPrintClient()
 
-    with pytest.raises(OctoPrintError) as error:
+    with pytest.raises(expected_exception):
         client._get("version")
-
-    assert str(status_code) in str(error.value)
 
 
 def test_get_printer_status(settings):
