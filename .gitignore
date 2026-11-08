@@ -20,6 +20,7 @@ staticfiles/
 .env
 .env.*
 !.env.example
+PRINTMONITOR_CONTEXTO_CODEX.md
 
 # Testing
 .pytest_cache/
