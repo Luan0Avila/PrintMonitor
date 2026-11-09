@@ -325,3 +325,34 @@ def test_get_dashboard_data_printing(settings):
 
     client.get_printer_status.assert_called_once()
     client.get_current_job.assert_called_once()
+
+def test_normalize_job_data(settings):
+    settings.OCTOPRINT_URL = "http://localhost:5000"
+    settings.OCTOPRINT_API_KEY = "test-api-key"
+    settings.OCTOPRINT_TIMEOUT = 5
+
+    client = OctoPrintClient()
+
+    job_data = {
+        "state": "Printing",
+        "job": {
+            "file": {
+                "name": "peca.gcode",
+            }
+        },
+        "progress": {
+            "completion": 45.5,
+            "printTime": 1200,
+            "printTimeLeft": 1500,
+        },
+    }
+
+    result = client.normalize_job_data(job_data)
+
+    assert result == {
+        "state": "Printing",
+        "file": "peca.gcode",
+        "progress": 45.5,
+        "print_time": 1200,
+        "print_time_left": 1500,
+    }

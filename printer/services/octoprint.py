@@ -160,6 +160,7 @@ class OctoPrintClient:
 
         printer_data = self.get_printer_status()
         job_data = self.get_current_job()
+        normalized_job = self.normalize_job_data(job_data)
 
         printer_state = printer_data.get("state", {})
 
@@ -171,7 +172,19 @@ class OctoPrintClient:
                 "flags": printer_state.get("flags", {}),
             },
             "temperature": printer_data.get("temperature", {}),
-            "job": job_data,
+            "job": normalized_job,
         }
 
+    def normalize_job_data(self, job_data):
+        job = job_data.get("job") or {}
+        progress = job_data.get("progress") or {}
+        file_data = job.get("file") or {}
+
+        return {
+            "state": job_data.get("state"),
+            "file": file_data.get("name"),
+            "progress": progress.get("completion"),
+            "print_time": progress.get("printTime"),
+            "print_time_left": progress.get("printTimeLeft"),
+        }
         
