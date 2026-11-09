@@ -7,6 +7,7 @@ from printer.services.octoprint import (
     OctoPrintClient,
     OctoPrintConflictError,
     OctoPrintConnectionError,
+    OctoPrintError,
     OctoPrintResponseError,
     OctoPrintTimeoutError,
 )
@@ -71,6 +72,19 @@ class PrinterStatusView(APIView):
                     "error": {
                         "code": "octoprint_response_error",
                         "message": "O OctoPrint retornou uma resposta inválida.",
+                    }
+                },
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        except OctoPrintError:
+            return Response(
+                {
+                    "error": {
+                        "code": "octoprint_error",
+                        "message": (
+                            "Ocorreu um erro inesperado na integração "
+                            "com a impressora."
+                        ),
                     }
                 },
                 status=status.HTTP_502_BAD_GATEWAY,

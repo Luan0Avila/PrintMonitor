@@ -44,8 +44,8 @@ class OctoPrintClient:
 
             response = requests.get(url, headers=self.headers, timeout=self.timeout)
 
-            logger.info("Consulta ao endpoint %s realizada com sucesso.", endpoint)
             response.raise_for_status()
+            logger.info("Consulta ao endpoint %s realizada com sucesso.", endpoint)
             return response.json()
 
         except requests.Timeout as error:
@@ -123,10 +123,11 @@ class OctoPrintClient:
         connection_state = connection.get("current", {})
 
         connected = connection_state.get("state") in {
-    "Operational",
-    "Printing",
-    "Paused",
+            "Operational",
+            "Printing",
+            "Paused",
 }
+
         if connected:
             logger.info(
                 "Impressora conectada. Estado: %s",
@@ -172,3 +173,5 @@ class OctoPrintClient:
             "temperature": printer_data.get("temperature", {}),
             "job": job_data,
         }
+
+        
