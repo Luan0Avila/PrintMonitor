@@ -356,3 +356,89 @@ def test_normalize_job_data(settings):
         "print_time": 1200,
         "print_time_left": 1500,
     }
+
+@pytest.mark.parametrize(
+    "job_data",
+    [
+        {
+            "state": "Operational",
+            "job": None,
+            "progress": None,
+        },
+        {
+            "state": "Operational",
+            "job": {
+                "file": None,
+            },
+            "progress": {},
+        },
+        {
+            "state": "Operational",
+            "job": {},
+            "progress": {},
+        },
+    ],
+)
+def test_normalize_job_data_without_active_print(settings, job_data):
+    settings.OCTOPRINT_URL = "http://localhost:5000"
+    settings.OCTOPRINT_API_KEY = "test-api-key"
+    settings.OCTOPRINT_TIMEOUT = 5
+
+    client = OctoPrintClient()
+
+    result = client.normalize_job_data(job_data)
+
+    assert result == {
+        "state": "Operational",
+        "file": None,
+        "progress": None,
+        "print_time": None,
+        "print_time_left": None,
+    }
+
+def test_get_dashboard_data_idle(settings):
+    settings.OCTOPRINT_URL = "http://localhost:5000"
+    settings.OCTOPRINT_API_KEY = "test-api-key"
+    settings.OCTOPRINT_TIMEOUT = 5
+
+    client = OctoPrintClient()
+
+    client.get_connection = Mock(
+        return_value={
+            "current": {
+                "state": "Operational",
+                "port": "/dev/ttyUSB0",
+                "baudrate": 115200,
+            }
+        }
+    )
+
+    client.get_printer_status = Mock(
+        return_value={
+            "state": {
+                "text": "Operational",
+                "flags": {"operational": True},
+            },
+            "temperature": {
+                "tool0": {"actual": 205.0, "target": 0.0},
+                "bed": {"actual": 60.0, "target": 0.0},
+            },
+        }
+    )
+
+    client.get_current_job = Mock(
+        return_value={
+            "state": "Operational",
+            "job": None,
+            "progress": {},
+        }
+    )
+
+    result = client.get_dashboard_data()
+
+    assert result["server"]["online"] is True
+    assert result["connection"]["connected"] is True
+    assert result["printer"]["state"] == "Operational"
+    assert result["temperature"]["tool0"]["actual"] == 205.0
+    assert result["job"]["file"] is None
+    assert result["job"]["progress"] is None
