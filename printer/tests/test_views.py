@@ -52,6 +52,7 @@ def test_printer_status_success(mock_client, api_client):
 
     mock_instance.get_dashboard_data.assert_called_once()
 
+
 @pytest.mark.parametrize(
     ("exception", "expected_status", "expected_code"),
     [
@@ -96,10 +97,11 @@ def test_printer_status_error(
     assert response.status_code == expected_status
     assert response.data["error"]["code"] == expected_code
 
+
 def test_printer_status_generic_error(api_client):
     with patch("printer.views.OctoPrintClient") as mock_client:
-        mock_client.return_value.get_dashboard_data.side_effect = (
-            OctoPrintError("Erro interno confidencial")
+        mock_client.return_value.get_dashboard_data.side_effect = OctoPrintError(
+            "Erro interno confidencial"
         )
 
         response = api_client.get("/api/printer/status/")

@@ -14,7 +14,6 @@ from printer.services.octoprint import (
 
 
 class PrinterStatusView(APIView):
-
     def get(self, request):
         client = OctoPrintClient()
 
@@ -82,8 +81,7 @@ class PrinterStatusView(APIView):
                     "error": {
                         "code": "octoprint_error",
                         "message": (
-                            "Ocorreu um erro inesperado na integração "
-                            "com a impressora."
+                            "Ocorreu um erro inesperado na integração com a impressora."
                         ),
                     }
                 },

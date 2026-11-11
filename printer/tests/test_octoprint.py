@@ -290,6 +290,7 @@ def test_get_request_exception(mock_get, settings):
     assert "Erro na requisição" in str(error.value)
     assert "Erro inesperado na requisição" in str(error.value)
 
+
 def test_get_dashboard_data_printing(settings):
     settings.OCTOPRINT_URL = "http://localhost:5000"
     settings.OCTOPRINT_API_KEY = "test-api-key"
@@ -297,26 +298,32 @@ def test_get_dashboard_data_printing(settings):
 
     client = OctoPrintClient()
 
-    client.get_connection = Mock(return_value={
-        "current": {
-            "state": "Printing",
-            "port": "/dev/ttyUSB0",
-            "baudrate": 115200,
+    client.get_connection = Mock(
+        return_value={
+            "current": {
+                "state": "Printing",
+                "port": "/dev/ttyUSB0",
+                "baudrate": 115200,
+            }
         }
-    })
+    )
 
-    client.get_printer_status = Mock(return_value={
-        "state": {
-            "text": "Printing",
-            "flags": {"printing": True},
-        },
-        "temperature": {},
-    })
+    client.get_printer_status = Mock(
+        return_value={
+            "state": {
+                "text": "Printing",
+                "flags": {"printing": True},
+            },
+            "temperature": {},
+        }
+    )
 
-    client.get_current_job = Mock(return_value={
-        "state": "Printing",
-        "progress": {},
-    })
+    client.get_current_job = Mock(
+        return_value={
+            "state": "Printing",
+            "progress": {},
+        }
+    )
 
     result = client.get_dashboard_data()
 
@@ -325,6 +332,7 @@ def test_get_dashboard_data_printing(settings):
 
     client.get_printer_status.assert_called_once()
     client.get_current_job.assert_called_once()
+
 
 def test_normalize_job_data(settings):
     settings.OCTOPRINT_URL = "http://localhost:5000"
@@ -356,6 +364,7 @@ def test_normalize_job_data(settings):
         "print_time": 1200,
         "print_time_left": 1500,
     }
+
 
 @pytest.mark.parametrize(
     "job_data",
@@ -395,6 +404,7 @@ def test_normalize_job_data_without_active_print(settings, job_data):
         "print_time": None,
         "print_time_left": None,
     }
+
 
 def test_get_dashboard_data_idle(settings):
     settings.OCTOPRINT_URL = "http://localhost:5000"

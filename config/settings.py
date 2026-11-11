@@ -144,17 +144,12 @@ OCTOPRINT_TIMEOUT = env.int("OCTOPRINT_TIMEOUT", default=5)
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-
     "formatters": {
         "verbose": {
-            "format": (
-                "{asctime} [{levelname}] "
-                "{name}: {message}"
-            ),
+            "format": ("{asctime} [{levelname}] {name}: {message}"),
             "style": "{",
         },
     },
-
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
@@ -166,7 +161,6 @@ LOGGING = {
             "formatter": "verbose",
         },
     },
-
     "loggers": {
         "printer": {
             "handlers": ["console", "file"],

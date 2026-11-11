@@ -5,6 +5,7 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+
 class OctoPrintError(Exception):
     """Erro base da integração com o OctoPrint."""
 
@@ -58,9 +59,7 @@ class OctoPrintClient:
             ) from error
 
         except requests.ConnectionError as error:
-            logger.error(
-                "Falha de conexão com o OctoPrint."
-            )
+            logger.error("Falha de conexão com o OctoPrint.")
             raise OctoPrintConnectionError(
                 "Não foi possível conectar ao OctoPrint."
             ) from error
@@ -102,9 +101,8 @@ class OctoPrintClient:
                 "Erro inesperado na requisição ao endpoint %s.",
                 endpoint,
             )
-            raise OctoPrintResponseError(
-                f"Erro na requisição: {error}"
-            ) from error
+            raise OctoPrintResponseError(f"Erro na requisição: {error}") from error
+
     def get_printer_status(self):
         return self._get("printer")
 
@@ -126,7 +124,7 @@ class OctoPrintClient:
             "Operational",
             "Printing",
             "Paused",
-}
+        }
 
         if connected:
             logger.info(
@@ -187,4 +185,3 @@ class OctoPrintClient:
             "print_time": progress.get("printTime"),
             "print_time_left": progress.get("printTimeLeft"),
         }
-        
