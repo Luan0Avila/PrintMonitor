@@ -27,9 +27,9 @@ class PrinterStateHistory(models.Model):
     recorded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ("-created_at",)
-        verbose_name = "Histórico de impressão"
-        verbose_name_plural = "Históricos de impressão"
+        ordering = ("-recorded_at",)
+        verbose_name = "Histórico de estado"
+        verbose_name_plural = "Históricos de estado"
 
     def __str__(self):
         return f"{self.state} - {self.recorded_at}"
@@ -74,9 +74,9 @@ class PrintJobHistory(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ("-recorded_at",)
-        verbose_name = "Histórico de estado"
-        verbose_name_plural = "Históricos de estado"
-
+        ordering = ("-created_at",)
+        verbose_name = "Histórico de impressão"
+        verbose_name_plural = "Históricos de impressão"
+    
     def __str__(self):
         return f"{self.file_name} - {self.state}"
