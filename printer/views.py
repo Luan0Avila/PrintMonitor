@@ -59,8 +59,9 @@ class PrinterStatusView(APIView):
                 {
                     "error": {
                         "code": "octoprint_conflict",
-                        "message": "O OctoPrint não conseguiu executar a operação solicitada.",
-                    }
+                        "message": (
+                            "O OctoPrint não conseguiu executar a operação solicitada.",
+            )}
                 },
                 status=status.HTTP_502_BAD_GATEWAY,
             )
