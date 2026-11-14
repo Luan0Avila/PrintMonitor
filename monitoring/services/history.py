@@ -1,4 +1,4 @@
-from monitoring.models import TemperatureHistory
+from monitoring.models import PrinterStateHistory, TemperatureHistory
 
 
 def save_temperature_history(temperature_data):
@@ -20,4 +20,16 @@ def save_temperature_history(temperature_data):
         nozzle_target=tool["target"],
         bed_actual=bed["actual"],
         bed_target=bed["target"],
+    )
+
+def save_printer_state_history(state_data):
+    state = state_data.get("state")
+    flags = state_data.get("flags") or {}
+
+    if not state:
+        return None
+
+    return PrinterStateHistory.objects.create(
+        state=state,
+        flags=flags,
     )

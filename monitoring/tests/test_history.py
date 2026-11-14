@@ -1,7 +1,13 @@
 import pytest
 
-from monitoring.models import TemperatureHistory
-from monitoring.services.history import save_temperature_history
+from monitoring.models import (
+    PrinterStateHistory,
+    TemperatureHistory,
+)
+from monitoring.services.history import (
+    save_printer_state_history,
+    save_temperature_history,
+)
 
 
 @pytest.mark.django_db
@@ -31,3 +37,50 @@ def test_save_temperature_history_with_incomplete_data():
 
     assert history is None
     assert TemperatureHistory.objects.count() == 0
+
+
+
+
+@pytest.mark.django_db
+def test_save_printer_state_history():
+    state_data = {
+        "state": "Printing",
+        "flags": {
+            "operational": True,
+            "printing": True,
+            "paused": False,
+            "error": False,
+        },
+    }
+
+    history = save_printer_state_history(state_data)
+
+    assert isinstance(history, PrinterStateHistory)
+    assert history.state == "Printing"
+    assert history.flags["printing"] is True
+    assert PrinterStateHistory.objects.count() == 1
+
+
+@pytest.mark.django_db
+def test_save_printer_state_history_without_state():
+    state_data = {
+        "state": None,
+        "flags": {},
+    }
+
+    history = save_printer_state_history(state_data)
+
+    assert history is None
+    assert PrinterStateHistory.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_save_printer_state_history_without_flags():
+    state_data = {
+        "state": "Operational",
+    }
+
+    history = save_printer_state_history(state_data)
+
+    assert history is not None
+    assert history.flags == {}
