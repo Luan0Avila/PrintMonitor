@@ -77,6 +77,6 @@ class PrintJobHistory(models.Model):
         ordering = ("-created_at",)
         verbose_name = "Histórico de impressão"
         verbose_name_plural = "Históricos de impressão"
-    
+
     def __str__(self):
         return f"{self.file_name} - {self.state}"
