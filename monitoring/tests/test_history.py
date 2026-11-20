@@ -1,4 +1,3 @@
-
 from decimal import Decimal
 
 import pytest
@@ -83,6 +82,7 @@ def test_save_printer_state_history_without_flags():
 
     assert history is not None
     assert history.flags == {}
+
 
 @pytest.mark.django_db
 def test_save_print_job_history():
