@@ -1,11 +1,132 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>PrintMonitor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#101310">
+    <title>PrintMonitor | Painel</title>
+    <link rel="stylesheet" href="{% static 'core/dashboard.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
+    <script src="{% static 'core/dashboard.js' %}" defer></script>
 </head>
-<body>
-    <h1>PrintMonitor</h1>
-    <p>Sistema de monitoramento de impressão 3D.</p>
+<body
+    data-status-url="{{ api_urls.status }}"
+    data-temperature-url="{{ api_urls.temperature }}"
+    data-temperature-history-url="{{ api_urls.temperature_history }}"
+    data-jobs-url="{{ api_urls.jobs }}"
+    data-poll-interval="{{ poll_interval }}"
+>
+    <main class="dashboard">
+        <header class="topbar">
+            <a class="brand" href="{% url 'core:home' %}" aria-label="PrintMonitor, página inicial">
+                <span class="brand-mark" aria-hidden="true">P</span>
+                <span>Print<span class="brand-accent">Monitor</span></span>
+            </a>
+            <div class="printer-identity">
+                <span class="eyebrow">IMPRESSORA MONITORADA</span>
+                <strong>{{ printer_name }}</strong>
+            </div>
+            <div class="connection-pill is-unknown" id="connection-indicator" role="status">
+                <span class="status-dot" aria-hidden="true"></span>
+                <span id="connection-label">Aguardando dados</span>
+            </div>
+        </header>
+
+        <section class="page-heading" aria-labelledby="page-title">
+            <div>
+                <p class="eyebrow">VISÃO GERAL</p>
+                <h1 id="page-title">Painel da impressora</h1>
+                <p class="subheading">Acompanhe o estado e as condições da sua impressão.</p>
+            </div>
+            <p class="refresh-state" id="refresh-state" aria-live="polite">Conectando à API…</p>
+        </section>
+
+        <div class="api-alert" id="api-alert" role="alert" hidden>
+            Não foi possível atualizar os dados. Exibindo as últimas informações recebidas.
+        </div>
+
+        <section class="overview-grid" aria-label="Estado e impressão atual">
+            <article class="panel status-panel">
+                <div class="panel-heading">
+                    <div><p class="eyebrow">ESTADO DA IMPRESSORA</p><h2>Status</h2></div>
+                    <span class="state-icon" aria-hidden="true">◉</span>
+                </div>
+                <p class="state-value" id="printer-state">—</p>
+                <p class="muted" id="connection-detail">Estado reportado pelo monitoramento</p>
+                <div class="status-divider"></div>
+                <div class="status-foot"><span class="status-dot" id="status-dot-inline"></span><span id="status-foot-label">Sem dados de conexão</span></div>
+            </article>
+
+            <article class="panel job-panel">
+                <div class="panel-heading">
+                    <div><p class="eyebrow">TRABALHO EM ANDAMENTO</p><h2>Impressão atual</h2></div>
+                    <span class="job-state" id="job-state">—</span>
+                </div>
+                <div id="active-job" hidden>
+                    <h3 class="job-filename" id="job-filename">—</h3>
+                    <div class="progress-meta"><span>Progresso</span><strong id="job-progress-label">0%</strong></div>
+                    <div class="progress-track" role="progressbar" aria-label="Progresso da impressão" aria-valuemin="0" aria-valuemax="100" id="job-progress-bar">
+                        <span id="job-progress-fill"></span>
+                    </div>
+                    <div class="job-times">
+                        <div><span class="eyebrow">TEMPO DECORRIDO</span><strong id="job-elapsed">—</strong></div>
+                        <div><span class="eyebrow">TEMPO RESTANTE</span><strong id="job-remaining">—</strong></div>
+                    </div>
+                </div>
+                <div class="empty-state" id="empty-job">
+                    <span class="empty-icon" aria-hidden="true">⌁</span>
+                    <strong>Nenhuma impressão ativa</strong>
+                    <span>Os trabalhos recentes aparecem no histórico abaixo.</span>
+                </div>
+            </article>
+        </section>
+
+        <section class="temperature-section" aria-labelledby="temperature-title">
+            <div class="section-heading"><div><p class="eyebrow">LEITURAS EM TEMPO REAL</p><h2 id="temperature-title">Temperaturas</h2></div></div>
+            <div class="temperature-grid">
+                <article class="panel temperature-card nozzle-card">
+                    <div class="temperature-title"><span class="temperature-icon" aria-hidden="true">⌁</span><div><h3>Bico</h3><span class="muted">Extrusor</span></div></div>
+                    <div class="temperature-reading"><strong id="nozzle-actual">—</strong><span>°C</span></div>
+                    <div class="target-row"><span>Alvo</span><strong><span id="nozzle-target">—</span> °C</strong></div>
+                </article>
+                <article class="panel temperature-card bed-card">
+                    <div class="temperature-title"><span class="temperature-icon" aria-hidden="true">▱</span><div><h3>Mesa</h3><span class="muted">Plataforma</span></div></div>
+                    <div class="temperature-reading"><strong id="bed-actual">—</strong><span>°C</span></div>
+                    <div class="target-row"><span>Alvo</span><strong><span id="bed-target">—</span> °C</strong></div>
+                </article>
+            </div>
+        </section>
+
+        <section class="charts-grid" aria-label="Gráficos de monitoramento">
+            <article class="panel chart-panel">
+                <div class="panel-heading"><div><p class="eyebrow">ÚLTIMAS LEITURAS</p><h2>Temperatura do bico</h2></div><span class="chart-legend"><i class="legend-nozzle"></i> Atual <i class="legend-target"></i> Alvo</span></div>
+                <div class="chart-unavailable" id="nozzle-chart-unavailable" hidden>Gráficos indisponíveis no momento.</div>
+                <div class="chart-wrap"><canvas id="nozzle-chart" aria-label="Histórico de temperatura do bico" role="img"></canvas></div>
+            </article>
+            <article class="panel chart-panel">
+                <div class="panel-heading"><div><p class="eyebrow">ÚLTIMAS LEITURAS</p><h2>Temperatura da mesa</h2></div><span class="chart-legend"><i class="legend-bed"></i> Atual <i class="legend-target"></i> Alvo</span></div>
+                <div class="chart-unavailable" id="bed-chart-unavailable" hidden>Gráficos indisponíveis no momento.</div>
+                <div class="chart-wrap"><canvas id="bed-chart" aria-label="Histórico de temperatura da mesa" role="img"></canvas></div>
+            </article>
+            <article class="panel chart-panel progress-chart-panel">
+                <div class="panel-heading"><div><p class="eyebrow">TENDÊNCIA</p><h2>Progresso das impressões</h2></div></div>
+                <div class="chart-empty" id="progress-chart-empty">A API armazena o estado mais recente de cada trabalho, sem pontos históricos de progresso.</div>
+                <div class="chart-wrap" id="progress-chart-wrap" hidden><canvas id="progress-chart" aria-label="Evolução do progresso das impressões" role="img"></canvas></div>
+            </article>
+        </section>
+
+        <section class="panel history-panel" aria-labelledby="history-title">
+            <div class="panel-heading history-heading"><div><p class="eyebrow">ATIVIDADE</p><h2 id="history-title">Histórico de impressões</h2></div><span class="record-count" id="job-count">— trabalhos</span></div>
+            <div class="table-scroll">
+                <table>
+                    <thead><tr><th>ARQUIVO</th><th>ESTADO</th><th>PROGRESSO</th><th>INÍCIO</th><th>CONCLUSÃO</th></tr></thead>
+                    <tbody id="jobs-table-body"><tr><td colspan="5" class="table-message">Carregando histórico…</td></tr></tbody>
+                </table>
+            </div>
+            <div class="table-footer"><span id="history-page-label">—</span><button class="next-page" id="next-jobs-page" type="button" disabled>Mais trabalhos <span aria-hidden="true">→</span></button></div>
+        </section>
+        <footer class="footer"><span>PrintMonitor</span><span>Atualização automática a cada <span id="poll-label">15</span> segundos</span></footer>
+    </main>
 </body>
 </html>
